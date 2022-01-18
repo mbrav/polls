@@ -34,3 +34,25 @@ class Poll(models.Model):
 
     def __str__(self):
         return f'Poll #{self.id} - {self.name}'
+
+
+class Choice(models.Model):
+
+    poll = models.ForeignKey(
+        Poll,
+        related_name='choices',
+        on_delete=models.CASCADE
+    )
+    
+    text = models.CharField(
+        'Choice Text',
+        max_length=200
+    )
+
+    votes = models.IntegerField(
+        'Choice votes',
+        default=0
+    )
+
+    def __str__(self):
+        return self.choice_text

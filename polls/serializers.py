@@ -10,6 +10,5 @@ class PollSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poll
-        fields = ('__all__',)
+        fields = '__all__'
         # read_only_fields = ('height', 'width')
-

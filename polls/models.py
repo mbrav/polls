@@ -1,7 +1,20 @@
+from datetime import timedelta
+
+from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 class Poll(models.Model):
+
+    @property
+    def is_open(self):
+        return self.date_end > timezone.now()
+
+    def get_poll_close_date():
+        return timezone.now() + timedelta(days=30)
+
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
     name = models.CharField(
         'Poll name',
@@ -16,7 +29,7 @@ class Poll(models.Model):
         max_length=255,
         blank=True,
     )
-    
+
     date_created = models.DateTimeField(
         'Date created / Poll start date',
         auto_now_add=True,
@@ -24,7 +37,7 @@ class Poll(models.Model):
 
     date_end = models.DateTimeField(
         ' Poll end date',
-        auto_now=True,
+        default=get_poll_close_date,
     )
 
     class Meta:
@@ -33,26 +46,53 @@ class Poll(models.Model):
         verbose_name_plural = 'Polls'
 
     def __str__(self):
-        return f'Poll #{self.id} - {self.name}'
+        return f'#{self.id} - {self.name}'
 
 
 class Choice(models.Model):
+    poll = models.ForeignKey(
+        Poll,
+        related_name='choice',
+        on_delete=models.CASCADE
+    )
+
+    text = models.CharField(
+        'Choice Text',
+        max_length=255
+    )
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Choice'
+        verbose_name_plural = 'Choices'
+
+    def __str__(self):
+        return f'{self.poll.name[:15]} - {self.text[:15]}'
+
+
+class Vote(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name='vote',
+        on_delete=models.CASCADE
+    )
 
     poll = models.ForeignKey(
         Poll,
-        related_name='choices',
+        related_name='vote',
         on_delete=models.CASCADE
     )
-    
-    text = models.CharField(
-        'Choice Text',
-        max_length=200
+
+    choice = models.ForeignKey(
+        Choice,
+        related_name='vote',
+        on_delete=models.CASCADE
     )
 
-    votes = models.IntegerField(
-        'Choice votes',
-        default=0
-    )
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Vote'
+        verbose_name_plural = 'Votes'
 
     def __str__(self):
-        return self.choice_text
+        return f'{self.poll.name[:15]} - {self.choice.text[:15]}'

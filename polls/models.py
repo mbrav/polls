@@ -1,8 +1,8 @@
-from datetime import timedelta
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+
+from .utils import Util
 
 
 class Poll(models.Model):
@@ -12,7 +12,7 @@ class Poll(models.Model):
         return self.date_end > timezone.now()
 
     def get_poll_close_date():
-        return timezone.now() + timedelta(days=30)
+        return Util.close_date(30)
 
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
@@ -36,8 +36,8 @@ class Poll(models.Model):
     )
 
     date_end = models.DateTimeField(
-        ' Poll end date',
-        default=get_poll_close_date,
+        'Poll end date',
+        default=Util.close_date,
     )
 
     class Meta:
@@ -67,7 +67,7 @@ class Choice(models.Model):
         verbose_name_plural = 'Choices'
 
     def __str__(self):
-        return f'{self.poll.name[:15]} - {self.text[:15]}'
+        return f'{self.text}'
 
 
 class Vote(models.Model):

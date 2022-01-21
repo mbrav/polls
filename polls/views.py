@@ -6,7 +6,9 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
 from .models import Choice, Poll, Vote
-from .serializers import ChoiceSerializer, PollSerializer, VoteSerializer
+from .serializers import (ChoiceSerializer, PollSerializer,
+                          PollSerializerClose, PollSerializerExtend,
+                          VoteSerializer)
 from .utils import Util
 
 
@@ -23,8 +25,16 @@ class PollViewSet(mixins.CreateModelMixin,
     """Poll View Class"""
 
     queryset = Poll.objects.all()
-    serializer_class = PollSerializer
     pagination_class = LimitOffsetPagination
+
+    def get_serializer_class(self):
+        """Custom serializer classes for different methods"""
+
+        if self.action == 'extend':
+            return PollSerializerExtend
+        if self.action == 'close':
+            return PollSerializerClose
+        return PollSerializer
 
     def perform_create(self, serializer):
         """Create New Poll"""
@@ -39,26 +49,48 @@ class PollViewSet(mixins.CreateModelMixin,
         user = _get_user(request)
         queryset = Poll.objects.filter(owner=user)
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def close(self, request, pk=None):
-        """Close poll by setting poll's end date to current date"""
+        """Close poll by setting poll's end date to current date
+        if close_date is not provided, otherwise set to provided close_date"""
 
-        # user = _get_user(request)
-        poll = get_object_or_404(queryset, pk=pk)
+        user = _get_user(request)
 
-        serializer = self.get_serializer(queryset)
-        return Response(serializer.data)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        time = request.data.get('date_end', None)
+        if time:
+            serializer.save(owner=user, date_end=time)
+        else:
+            now = Util.time_now()
+            serializer.save(owner=user, date_end=now)
+
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
     @action(detail=True, methods=['post'])
     def extend(self, request, pk=None):
-        """Open poll by extending poll's end date by 1 day"""
+        """Open poll by extending poll's end date by 1 day from now"""
 
         user = _get_user(request)
-        queryset = Poll.objects.filter(owner=user)
-        serializer = self.get_serializer(queryset)
-        return Response(serializer.data)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        data = request.data.dict()
+        time = data.pop('date_end', None)
+        if time:
+            serializer.save(owner=user, date_end=time)
+        else:
+            date_end = Util.close_date(instance.date_end, **data)
+            serializer.save(owner=user, date_end=date_end)
+
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
 class VoteViewSet(mixins.CreateModelMixin,
@@ -80,7 +112,7 @@ class VoteViewSet(mixins.CreateModelMixin,
 
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_create(self, serializer):
         """Make a vote"""

@@ -11,9 +11,6 @@ class Poll(models.Model):
     def is_open(self):
         return self.date_end > timezone.now()
 
-    def get_poll_close_date():
-        return Util.close_date(30)
-
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
     name = models.CharField(
@@ -37,7 +34,7 @@ class Poll(models.Model):
 
     date_end = models.DateTimeField(
         'Poll end date',
-        default=Util.close_date,
+        default=Util.close_date(days=7),
     )
 
     class Meta:

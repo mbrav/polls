@@ -12,6 +12,7 @@ schema_view = get_schema_view(
         title='Polls API Docs',
         default_version='v1',
         description='Polls API Schema',
+        terms_of_service='https://github.com/mbrav/polls',
         contact=openapi.Contact(email='mbrav@protonmail.com'),
         license=openapi.License(name='BSD License'),
     ),

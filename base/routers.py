@@ -8,5 +8,5 @@ router.register(r'votes', VoteViewSet, basename='votes')
 
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path(r'^', include(router.urls)),
 ]

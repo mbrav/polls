@@ -1,8 +1,29 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
 from .utils import Util
+
+
+class AnonUser(AbstractUser):
+    """Custom Anon user model based on IP address"""
+
+    @property
+    def hashed_ip(self):
+        return Util.hash_string_ip(self.ip_address)
+
+    ip_address = models.GenericIPAddressField(
+        protocol='IPv4',
+        default='127.0.0.1',
+        unique=True)
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Anon User'
+        verbose_name_plural = 'Anon Users'
+
+    def __str__(self):
+        return f'{self.hashed_ip}'
 
 
 class Poll(models.Model):
@@ -11,7 +32,7 @@ class Poll(models.Model):
     def is_open(self):
         return self.date_end > timezone.now()
 
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(AnonUser, on_delete=models.CASCADE)
 
     name = models.CharField(
         'Poll name',
@@ -69,7 +90,7 @@ class Choice(models.Model):
 
 class Vote(models.Model):
     user = models.ForeignKey(
-        User,
+        AnonUser,
         related_name='vote',
         on_delete=models.CASCADE
     )

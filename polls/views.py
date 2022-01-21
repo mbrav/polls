@@ -1,21 +1,46 @@
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from rest_framework import mixins, status, viewsets
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
-from .models import Choice, Poll, Vote
-from .serializers import (ChoiceSerializer, PollSerializer,
-                          PollSerializerClose, PollSerializerExtend,
-                          VoteSerializer)
+from .models import AnonUser, Choice, Poll, Vote
+from .permissions import IsAuthenticated, IsAuthorOrReadOnlyPermission
+from .serializers import (AnonTokenSerializer, PollAddChoiceSerializer,
+                          PollCloseSerializer, PollExtendSerializer,
+                          PollSerializer, VoteSerializer)
 from .utils import Util
 
 
 def _get_user(request):
     """Get user instance"""
-    user = get_object_or_404(User, id=request.user.id)
-    return user
+    return request.user
+
+
+class AnonUserGenToken(ObtainAuthToken):
+    """Custom token generation based on user IP"""
+
+    serializer_class = AnonTokenSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        ip = serializer.validated_data['ip_address']
+
+        if not user:
+            user = AnonUser(ip_address=ip)
+            user.save()
+
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'ip': user.ip_address,
+            'username': user.username,
+        })
 
 
 class PollViewSet(mixins.CreateModelMixin,
@@ -26,14 +51,17 @@ class PollViewSet(mixins.CreateModelMixin,
 
     queryset = Poll.objects.all()
     pagination_class = LimitOffsetPagination
+    permission_classes = (IsAuthorOrReadOnlyPermission,)
 
     def get_serializer_class(self):
         """Custom serializer classes for different methods"""
 
         if self.action == 'extend':
-            return PollSerializerExtend
+            return PollExtendSerializer
         if self.action == 'close':
-            return PollSerializerClose
+            return PollCloseSerializer
+        if self.action == 'add_choice':
+            return PollAddChoiceSerializer
         return PollSerializer
 
     def perform_create(self, serializer):
@@ -92,8 +120,25 @@ class PollViewSet(mixins.CreateModelMixin,
 
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
+    @action(detail=True, methods=['post'])
+    def add_choice(self, request, pk=None):
+        """Add choice to poll"""
+
+        user = _get_user(request)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        choice_text = serializer.validated_data.get('choice')
+        new_choice = Choice(poll=instance, text=choice_text)
+        new_choice.save()
+
+        return Response(serializer.validated_data,
+                        status=status.HTTP_201_CREATED)
+
 
 class VoteViewSet(mixins.CreateModelMixin,
+                  mixins.RetrieveModelMixin,
                   mixins.UpdateModelMixin,
                   mixins.ListModelMixin,
                   viewsets.GenericViewSet):
@@ -101,6 +146,7 @@ class VoteViewSet(mixins.CreateModelMixin,
 
     serializer_class = VoteSerializer
     pagination_class = LimitOffsetPagination
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user = _get_user(self.request)

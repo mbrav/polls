@@ -1,3 +1,4 @@
+import hashlib
 from datetime import timedelta
 
 from django.utils import timezone
@@ -30,4 +31,29 @@ class Util:
 
     @staticmethod
     def time_now():
+        """Get timezone with Django"""
+
         return timezone.now()
+
+    @staticmethod
+    def hash_string(string: str):
+        """Hash string with SHA384"""
+
+        hash_object = hashlib.sha384(string.encode('utf-8'))
+        return hash_object.hexdigest()
+
+    @staticmethod
+    def hash_string_ip(string: str):
+        """Hash string with SHA384 and return 20 characters"""
+
+        hash_object = hashlib.sha384(string.encode('utf-8'))
+        return hash_object.hexdigest()[:20]
+
+    @staticmethod
+    def get_client_ip(request):
+        """Get client IP from request context object"""
+
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR')

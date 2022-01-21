@@ -1,6 +1,28 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 
-from .models import Choice, Poll, Vote
+from .models import AnonUser, Choice, Poll, Vote
+
+
+@admin.register(AnonUser)
+class CustomUserAdmin(UserAdmin):
+
+    list_per_page = 50
+    list_display = (
+        'id',
+        'ip_address',
+        'username',
+        'hashed_ip',
+    )
+    empty_value_display = '-empty-'
+
+    fieldsets = UserAdmin.fieldsets + (
+        (None, {'fields': ('ip_address',)}),
+    )
+
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        (None, {'fields': ('ip_address',)}),
+    )
 
 
 @admin.register(Poll)

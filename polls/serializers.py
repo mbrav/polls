@@ -1,8 +1,41 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from .models import Choice, Poll, Vote
+from .models import AnonUser, Choice, Poll, Vote
 from .utils import Util
+
+
+class AnonTokenSerializer(serializers.ModelSerializer):
+    """
+    AnonToken validation serializer based on client IP
+    """
+
+    ip_address = serializers.IPAddressField(
+        read_only=True
+    )
+
+    token = serializers.CharField(
+        read_only=True
+    )
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        ip = Util.get_client_ip(request)
+
+        if not ip:
+            msg = 'Unable to validate based on your IP address'
+            raise serializers.ValidationError(msg, code='authorization')
+
+        hashed_ip = Util.hash_string_ip(ip)
+        user, created = AnonUser.objects.get_or_create(
+            ip_address=ip, username=hashed_ip, is_active=True)
+
+        attrs['ip_address'] = ip
+        attrs['user'] = user
+        return attrs
+
+    class Meta:
+        model = AnonUser
+        fields = ('ip_address', 'token',)
 
 
 class ChoiceSerializer(serializers.ModelSerializer):
@@ -29,6 +62,7 @@ class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
         fields = ('id', 'text', 'count', 'count_percent')
+        read_only_fields = ('count', 'count_percent', 'id')
 
 
 class VoteSerializer(serializers.ModelSerializer):
@@ -39,29 +73,29 @@ class VoteSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         poll = attrs.get('poll', None)
         choice = attrs.get('choice', None)
-        user = attrs.get('user', None)
+
+        user = self.context['request'].user
 
         if poll.date_end < Util.time_now():
-            raise serializers.ValidationError(
-                'Sorry, Poll\'s voting period has expired')
+            msg = 'Sorry, Poll\'s voting period has expired'
+            raise serializers.ValidationError(msg)
 
         poll_has_choice = Choice.objects.filter(poll=poll).exists()
         user_has_voted = Vote.objects.filter(poll=poll, user=user).exists()
 
         if not poll_has_choice:
-            raise serializers.ValidationError(
-                f'Poll \'{poll.name}\' does not have \'{choice.text}\' as option')
+            msg = f'Poll \'{poll.name}\' does not have \'{choice.text}\' as option'
+            raise serializers.ValidationError(msg)
 
         if user_has_voted:
-            raise serializers.ValidationError(
-                f'Sorry, you already casted your vote in poll \'{poll.name}\'')
+            msg = f'Sorry, you already casted your vote in poll \'{poll.name}\''
+            raise serializers.ValidationError(msg)
 
         return attrs
 
     class Meta:
         model = Vote
-        fields = '__all__'
-        # read_only_fields = ('user',)
+        fields = ('id', 'poll', 'choice')
 
 
 class PollSerializer(serializers.ModelSerializer):
@@ -77,7 +111,8 @@ class PollSerializer(serializers.ModelSerializer):
 
     vote_count = serializers.SerializerMethodField(
         read_only=True,
-        method_name='get_vote_count')
+        method_name='get_vote_count'
+    )
 
     def get_vote_count(self, obj):
         return obj.vote.count()
@@ -88,9 +123,9 @@ class PollSerializer(serializers.ModelSerializer):
             'vote_count', 'choices', 'date_created', 'date_end')
 
 
-class PollSerializerClose(serializers.ModelSerializer):
+class PollCloseSerializer(serializers.ModelSerializer):
     """
-    Poll serializer for Closing Poll
+    Poll serializer for close @action
     """
 
     date_end = serializers.DateTimeField(required=False)
@@ -99,8 +134,8 @@ class PollSerializerClose(serializers.ModelSerializer):
         poll_pk = self.context['view'].kwargs.get('pk')
         poll = Poll.objects.get(pk=poll_pk)
         if value < poll.date_created:
-            raise serializers.ValidationError(
-                'date_end cannot be prior to date_created')
+            msg = 'date_end cannot be prior to date_created'
+            raise serializers.ValidationError(msg)
         return value
 
     class Meta:
@@ -108,38 +143,67 @@ class PollSerializerClose(serializers.ModelSerializer):
         fields = ('date_end',)
 
 
-class PollSerializerExtend(PollSerializerClose):
+class PollExtendSerializer(PollCloseSerializer):
     """
-    Poll serializer for Extending Poll
+    Poll serializer for extend @action
     """
 
     minutes = serializers.IntegerField(
         write_only=True,
         default=0,
-        required=False)
+        required=False
+    )
 
     hours = serializers.IntegerField(
         write_only=True,
         default=0,
-        required=False)
+        required=False
+    )
 
     days = serializers.IntegerField(
         write_only=True,
         default=0,
-        required=False)
+        required=False
+    )
 
     weeks = serializers.IntegerField(
         write_only=True,
         default=0,
-        required=False)
+        required=False
+    )
 
     def validate(self, attrs):
         # fields = tuple(self.fields)
         if len(attrs) == 0:
-            raise serializers.ValidationError(
-                'Please provide date_end or one of four time increments')
+            msg = 'Please provide date_end or one of four time increments'
+            raise serializers.ValidationError(msg)
         return attrs
 
     class Meta:
         model = Poll
         fields = ('date_end', 'minutes', 'hours', 'days', 'weeks')
+
+
+class PollAddChoiceSerializer(PollCloseSerializer):
+    """
+    Serializer for add_choice @action
+    """
+
+    choice = serializers.CharField(
+        write_only=True,
+        required=True
+    )
+
+    def validate_choice(self, value):
+        poll = self.instance
+        choice_exists = Choice.objects.filter(
+            text=value, poll=poll).exists()
+        # fields = tuple(self.fields)
+        if choice_exists:
+            msg = 'Choice already exists'
+            raise serializers.ValidationError(msg)
+        return value
+
+    class Meta:
+        model = Poll
+        fields = ('choice',)

@@ -3,4 +3,45 @@
 
 # polls
 
-Polls with DRF and Django
+Polls is an a REST Api application that allows users to anonymously create polls and votes. Authentication is implemented using Tokens that are generated for a custom _AnonUser_ model that uses users IPv4 addresses that are hashed on the server using SHA384 hashing algorithm. **Do not rely on this approach since it is not secure** and can take a hacker less than a minute to go through all 4'294'967'296 IPv4 address combinations. It is done purely for educational purposes.
+
+## Instructions
+
+```bash
+$ git clone https://github.com/mbrav/polls.git
+$ cd heifmgur
+```
+
+Setup a local python environment:
+
+```bash
+$ python3 -m venv venv
+$ source venv/bin/activate
+```
+
+Install dependencies with poetry:
+
+```bash
+$ poetry install
+```
+
+Setup Django database and migrations:
+
+```bash
+$ python manage.py makemigrations
+$ python manage.py migrate
+```
+
+Setup an admin user (not required):
+
+```bash
+$ python manage.py createsuperuser
+```
+
+Run server
+
+```bash
+$ python manage.py runserver
+```
+
+Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/)

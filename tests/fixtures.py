@@ -61,20 +61,30 @@ def user_client2(token2):
 
 @pytest.fixture
 def poll_1(user):
-    from polls.models import Choice, Poll
-    poll = Poll.objects.create(
+    from polls.models import Poll
+    return Poll.objects.create(
         owner=user, name='poll_1', description='Best politicians')
-    c1 = Choice.objects.create(poll=poll, text='George Bush')
-    c2 = Choice.objects.create(poll=poll, text='Angela Merkel')
-    c3 = Choice.objects.create(poll=poll, text='Leonid Breshnev')
-    return [poll, (c1, c2, c3)]
 
 
 @pytest.fixture
 def poll_2(user2):
-    from polls.models import Choice, Poll
-    poll = Poll.objects.create(
+    from polls.models import Poll
+    return Poll.objects.create(
         owner=user2, name='poll_2', description='Best people')
-    c1 = Choice.objects.create(poll=poll, text='Steven Hawking')
-    c2 = Choice.objects.create(poll=poll, text='Immanuel Kant')
-    return [poll, (c1, c2)]
+
+
+@pytest.fixture
+def poll_1_choices(poll_1):
+    from polls.models import Choice
+    c1 = Choice.objects.create(poll=poll_1, text='George Bush')
+    c2 = Choice.objects.create(poll=poll_1, text='Angela Merkel')
+    c3 = Choice.objects.create(poll=poll_1, text='Leonid Breshnev')
+    return (c1, c2, c3)
+
+
+@pytest.fixture
+def poll_2_choices(poll_2):
+    from polls.models import Choice
+    c1 = Choice.objects.create(poll=poll_2, text='Steven Hawking')
+    c2 = Choice.objects.create(poll=poll_2, text='Immanuel Kant')
+    return (c1, c2)

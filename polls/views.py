@@ -78,6 +78,16 @@ class PollViewSet(mixins.CreateModelMixin,
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def are_open(self, request, pk=None):
+        """List polls that are open"""
+
+        today = Util.time_now()
+        queryset = Poll.objects.filter(
+            date_end__date__gt=today)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'])
     def close(self, request, pk=None):
         """Close poll by setting poll's end date to current date

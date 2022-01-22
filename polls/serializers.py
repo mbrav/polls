@@ -129,6 +129,9 @@ class PollCloseSerializer(serializers.ModelSerializer):
     """
 
     date_end = serializers.DateTimeField(required=False)
+    is_open = serializers.BooleanField(
+        read_only=True,
+    )
 
     def validate_date_end(self, value):
         poll_pk = self.context['view'].kwargs.get('pk')
@@ -140,7 +143,7 @@ class PollCloseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poll
-        fields = ('date_end',)
+        fields = ('date_end', 'is_open')
 
 
 class PollExtendSerializer(PollCloseSerializer):
@@ -181,7 +184,7 @@ class PollExtendSerializer(PollCloseSerializer):
 
     class Meta:
         model = Poll
-        fields = ('date_end', 'minutes', 'hours', 'days', 'weeks')
+        fields = ('date_end', 'minutes', 'hours', 'days', 'weeks', 'is_open')
 
 
 class PollAddChoiceSerializer(PollCloseSerializer):

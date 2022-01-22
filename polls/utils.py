@@ -36,6 +36,12 @@ class Util:
         return timezone.now()
 
     @staticmethod
+    def date_is_future(date):
+        """Get timezone with Django"""
+
+        return date > timezone.now()
+
+    @staticmethod
     def hash_string(string: str):
         """Hash string with SHA384"""
 
@@ -44,10 +50,10 @@ class Util:
 
     @staticmethod
     def hash_string_ip(string: str):
-        """Hash string with SHA384 and return 20 characters"""
+        """Hash string with SHA384 and return 30 characters"""
 
         hash_object = hashlib.sha384(string.encode('utf-8'))
-        return hash_object.hexdigest()[:20]
+        return hash_object.hexdigest()[:30]
 
     @staticmethod
     def get_client_ip(request):

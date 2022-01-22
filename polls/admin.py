@@ -12,7 +12,6 @@ class CustomUserAdmin(UserAdmin):
         'id',
         'ip_address',
         'username',
-        'hashed_ip',
     )
     empty_value_display = '-empty-'
 

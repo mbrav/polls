@@ -5,6 +5,12 @@
 
 Polls is an a REST Api application that allows users to anonymously create polls and votes. Authentication is implemented using Tokens that are generated for a custom _AnonUser_ model that uses users IPv4 addresses that are hashed on the server using SHA384 hashing algorithm. **Do not rely on this approach since it is not secure** and can take a hacker less than a minute to go through all 4'294'967'296 IPv4 address combinations. It is done purely for educational purposes.
 
+### To improve
+
+-   [ ] #1 Configure app for IPv6 address use only
+-   [ ] #2 Hash passwords on the backend side instead of storing passwords in clear text
+-   [ ] #3 Pytest coverage
+
 ## Instructions
 
 ```bash

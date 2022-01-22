@@ -1,16 +1,13 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.utils import timezone
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 from .utils import Util
 
 
 class AnonUser(AbstractUser):
     """Custom Anon user model based on IP address"""
-
-    @property
-    def hashed_ip(self):
-        return Util.hash_string_ip(self.ip_address)
 
     ip_address = models.GenericIPAddressField(
         protocol='IPv4',
@@ -23,14 +20,21 @@ class AnonUser(AbstractUser):
         verbose_name_plural = 'Anon Users'
 
     def __str__(self):
-        return f'{self.hashed_ip}'
+        return f'{self.username}'
+
+
+@receiver(pre_save, sender=AnonUser)
+def set_username(sender, instance, *args, **kwargs):
+    """Set AnonUser's username to hash of IP address"""
+
+    instance.username = Util.hash_string_ip(instance.ip_address)
 
 
 class Poll(models.Model):
 
     @property
     def is_open(self):
-        return self.date_end > timezone.now()
+        return Util.date_is_future(self.date_end)
 
     owner = models.ForeignKey(AnonUser, on_delete=models.CASCADE)
 

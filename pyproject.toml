@@ -8,24 +8,26 @@ license = "GNU"
 [tool.poetry.dependencies]
 python = "^3.9"
 Django = "<4"
-pytest = "^6.2"
 djangorestframework = "^3.13.1"
 drf-yasg = {extras = ["validation"], version = "^1.20.0"}
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
 autopep8 = "^1.6.0"
+pytest-django = "^4.5.2"
+pytest-cov = "^3.0.0"
 
 [tool.pytest.ini_options]
 minversion = "6.2"
-addopts = "--docker-compose=docker/docker-compose.yml"
+DJANGO_SETTINGS_MODULE = "base.settings.dev"
 testpaths = [
-    "tests",
+    "tests/",
 ]
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
 ]
+addopts = "-vv -p no:cacheprovider"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

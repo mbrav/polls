@@ -70,9 +70,20 @@ class VoteSerializer(serializers.ModelSerializer):
     Base Vote serializer
     """
 
+    user = serializers.CharField(
+        source='user.username',
+        read_only=True,
+    )
+
     def validate(self, attrs):
         poll = attrs.get('poll', None)
         choice = attrs.get('choice', None)
+
+        if not poll:
+            poll = self.instance.poll
+
+        if not choice:
+            choice = self.instance.choice
 
         user = self.context['request'].user
 
@@ -82,20 +93,26 @@ class VoteSerializer(serializers.ModelSerializer):
 
         poll_has_choice = Choice.objects.filter(poll=poll).exists()
         user_has_voted = Vote.objects.filter(poll=poll, user=user).exists()
+        same_vote = Vote.objects.filter(
+            poll=poll, user=user, choice=choice).exists()
 
         if not poll_has_choice:
             msg = f'Poll \'{poll.name}\' does not have \'{choice.text}\' as option'
             raise serializers.ValidationError(msg)
 
-        if user_has_voted:
-            msg = f'Sorry, you already casted your vote in poll \'{poll.name}\''
+        if same_vote:
+            msg = 'You cannot vote for the same option more than once'
+            raise serializers.ValidationError(msg)
+
+        if user_has_voted and poll.type != '2':
+            msg = f'Sorry, poll \'{poll.name}\' is not multivote'
             raise serializers.ValidationError(msg)
 
         return attrs
 
     class Meta:
         model = Vote
-        fields = ('id', 'poll', 'choice')
+        fields = ('id', 'poll', 'choice', 'user')
 
 
 class PollSerializer(serializers.ModelSerializer):
@@ -119,7 +136,7 @@ class PollSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poll
-        fields = ('id', 'name', 'description', 'is_open',
+        fields = ('id', 'name', 'type', 'description', 'is_open',
             'vote_count', 'choices', 'date_created', 'date_end')
 
 
@@ -199,6 +216,11 @@ class PollAddChoiceSerializer(PollCloseSerializer):
 
     def validate_choice(self, value):
         poll = self.instance
+
+        if poll.type not in ('1', '2'):
+            msg = 'Poll is not of a choice type'
+            raise serializers.ValidationError(msg)
+
         choice_exists = Choice.objects.filter(
             text=value, poll=poll).exists()
         # fields = tuple(self.fields)

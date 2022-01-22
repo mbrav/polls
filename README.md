@@ -7,9 +7,9 @@ Polls is an a REST Api application that allows users to anonymously create polls
 
 ### To improve
 
--   [ ] #1 Configure app for IPv6 address use only
--   [ ] #2 Hash passwords on the backend side instead of storing passwords in clear text
--   [ ] #3 Pytest coverage
+-   [ ] [#1](https://github.com/mbrav/polls/issues/1) Configure app for IPv6 address use only
+-   [ ] [#2](https://github.com/mbrav/polls/issues/2) Hash IP addresses on the backend side instead of storing addresses in clear text
+-   [ ] [#3](https://github.com/mbrav/polls/issues/3) Pytest coverage
 
 ## Instructions
 
@@ -50,4 +50,4 @@ Run server
 $ python manage.py runserver
 ```
 
-Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) for a detailed ReDoc API schema description

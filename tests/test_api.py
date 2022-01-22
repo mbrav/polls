@@ -38,8 +38,8 @@ class TestPolls:
 
         url = reverse('polls-list')
         response = user_unauth.get(url)
-        p_1 = response.data['results'][0]
-        p_2 = response.data['results'][1]
+        p_1 = response.data.get('results')[0]
+        p_2 = response.data.get('results')[1]
 
         assert response.status_code == 200
 
@@ -53,22 +53,56 @@ class TestPolls:
         assert p_2['is_open']
         assert poll_2.description == p_2['description']
 
+    def test_poll_detail(self, user_unauth, poll_1):
+        url = reverse('polls-detail', kwargs={'pk': poll_1.id})
+        response = user_unauth.get(url)
+        assert response.status_code == 200
+
     @pytest.mark.django_db
     def test_poll_choices(
             self, user_unauth, poll_1_choices, poll_2_choices):
 
         url = reverse('polls-list')
         response = user_unauth.get(url)
-        p_1 = response.data['results'][0]
-        p_2 = response.data['results'][1]
+        p_1 = response.data.get('results')[0]
+        p_2 = response.data.get('results')[1]
 
         assert response.status_code == 200
 
         for c, choice in enumerate(p_1['choices']):
-            assert choice['text'] == poll_1_choices[c].text
+            assert choice.get('text') == poll_1_choices[c].text
 
         for c, choice in enumerate(p_2['choices']):
-            assert choice['text'] == poll_2_choices[c].text
+            assert choice.get('text') == poll_2_choices[c].text
+
+    @pytest.mark.django_db
+    def test_poll_patch(self, user_client, poll_1):
+        url = reverse('polls-detail', kwargs={'pk': poll_1.pk})
+
+        response = user_client.get(url)
+
+        new_name = 'New Poll Name'
+        name = response.data.get('name')
+        response = user_client.patch(url, {'name': new_name})
+
+        assert response.data.get('name') != name
+        assert response.data.get('name') == new_name
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_poll_delete(self, user_client, poll_1):
+        url = reverse('polls-detail', kwargs={'pk': poll_1.pk})
+
+        response = user_client.delete(url)
+        assert response.status_code == 204
+
+    @pytest.mark.django_db
+    def test_poll_delete_permission(self, user_client, poll_2):
+        url = reverse('polls-detail', kwargs={'pk': poll_2.pk})
+
+        response = user_client.delete(url)
+        assert response.status_code != 204
+        assert response.status_code == 403
 
     @pytest.mark.django_db
     def test_poll_my(self, user_client, user_client2, poll_1, poll_2):
@@ -109,7 +143,7 @@ class TestPolls:
         assert poll_1.is_open
         response = user_client.post(url)
         assert response.status_code == 202
-        assert response.data['is_open'] == False
+        assert response.data.get('is_open') is False
 
     @pytest.mark.django_db
     def test_poll_close_permission(self, user_client, poll_2):
@@ -130,7 +164,17 @@ class TestPolls:
         url = reverse('polls-detail', kwargs={'pk': poll_1.pk})
         response = user_client.get(url)
 
-        assert text == response.data['choices'][0]['text']
+        assert text == response.data.get('choices')[0]['text']
+
+    @pytest.mark.django_db
+    def test_poll_add_choice_duplicate(
+            self, user_client, poll_1, poll_1_choices):
+
+        text = poll_1_choices[0].text
+        url = reverse('polls-add-choice', kwargs={'pk': poll_1.pk})
+        response = user_client.post(url, {'choice': text})
+
+        assert response.status_code == 400
 
     @pytest.mark.django_db
     def test_poll_add_choice_permission(self, user_client, poll_2):
@@ -146,12 +190,12 @@ class TestPolls:
 
         url = reverse('polls-close', kwargs={'pk': poll_1.pk})
         response = user_client.post(url)
-        assert response.data['is_open'] == False
+        assert response.data.get('is_open') is False
 
         url = reverse('polls-extend', kwargs={'pk': poll_1.pk})
         response = user_client.post(url, {'minutes': 60})
         assert response.status_code == 202
-        assert response.data['is_open']
+        assert response.data.get('is_open')
 
         response = user_client.post(url, {})
         assert response.status_code == 400
@@ -177,3 +221,111 @@ class TestVotes:
         url = reverse('votes-list')
         response = user_client.get(url)
         assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_vote_detail(self, user_client, poll_3_votes):
+        url = reverse('votes-detail', kwargs={'pk': poll_3_votes[0].id})
+        response = user_client.get(url)
+        assert response.status_code == 200
+
+    def test_vote_detail_permission(self, user_client2, poll_3_votes):
+        url = reverse('votes-detail', kwargs={'pk': poll_3_votes[0].id})
+        response = user_client2.get(url)
+        assert response.status_code != 200
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_make_vote(self, user_client, poll_1, poll_1_choices):
+
+        url = reverse('votes-list')
+
+        choice = poll_1_choices[0].id
+        response = user_client.post(
+            url, {'poll': poll_1.pk, 'choice': choice})
+        assert response.status_code == 201
+
+        choice2 = poll_1_choices[1].id
+        response = user_client.post(
+            url, {'poll': poll_1.pk, 'choice': choice2})
+        assert response.status_code != 201
+
+        url = reverse('votes-list')
+        response = user_client.get(url)
+        assert response.data[0].get('choice') == choice
+
+    @pytest.mark.django_db
+    def test_make_vote_closed(
+            self, user_client, poll_1, poll_1_choices):
+
+        url = reverse('polls-close', kwargs={'pk': poll_1.pk})
+
+        assert poll_1.is_open
+        response = user_client.post(url)
+
+        url = reverse('votes-list')
+
+        choice = poll_1_choices[0].id
+        response = user_client.post(
+            url, {'poll': poll_1.pk, 'choice': choice})
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_make_multivote(self, user_client, poll_3, poll_3_choices):
+
+        url = reverse('votes-list')
+
+        choice = poll_3_choices[0].id
+        response = user_client.post(
+            url, {'poll': poll_3.pk, 'choice': choice})
+        assert response.status_code == 201
+
+        response = user_client.post(
+            url, {'poll': poll_3.pk, 'choice': choice})
+        assert response.status_code != 201
+
+        choice2 = poll_3_choices[1].id
+        response = user_client.post(
+            url, {'poll': poll_3.pk, 'choice': choice2})
+        assert response.status_code == 201
+
+        url = reverse('votes-list')
+        response = user_client.get(url)
+        assert response.data[0].get('choice') == choice
+        assert response.data[1].get('choice') == choice2
+
+    @pytest.mark.django_db
+    def test_vote_patch(self, user_client, poll_3, poll_3_choices):
+
+        url = reverse('votes-list')
+        choice = poll_3_choices[0].id
+        choice2 = poll_3_choices[1].id
+
+        response = user_client.post(
+            url, {'poll': poll_3.pk, 'choice': choice})
+
+        created_choice = response.data
+
+        url = reverse('votes-detail', kwargs={'pk': created_choice['id']})
+        response = user_client.patch(
+            url, {'choice': choice2})
+
+        assert response.data.get('choice') != created_choice
+        assert response.data.get('choice') == choice2
+
+    @pytest.mark.django_db
+    def test_vote_delete(self, user_client, poll_3_votes):
+        url = reverse('votes-detail', kwargs={'pk': poll_3_votes[0].id})
+
+        response = user_client.delete(url)
+        assert response.status_code == 204
+
+        response = user_client.get(url)
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_vote_delete_permission(self, user_client2, poll_3_votes):
+        url = reverse('polls-detail', kwargs={'pk': poll_3_votes[0].id})
+
+        response = user_client2.delete(url)
+        assert response.status_code != 204
+        assert response.status_code == 403

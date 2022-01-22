@@ -32,11 +32,23 @@ def set_username(sender, instance, *args, **kwargs):
 
 class Poll(models.Model):
 
+    POLL_TYPES = (
+        ('1', 'Choice'),
+        ('2', 'Multichoice'),
+        ('3', 'Answer'),
+    )
+
     @property
     def is_open(self):
         return Util.date_is_future(self.date_end)
 
     owner = models.ForeignKey(AnonUser, on_delete=models.CASCADE)
+
+    type = models.CharField(
+        max_length=1,
+        default='1',
+        choices=POLL_TYPES
+    )
 
     name = models.CharField(
         'Poll name',
@@ -93,6 +105,11 @@ class Choice(models.Model):
 
 
 class Vote(models.Model):
+
+    @property
+    def owner(self):
+        return self.user
+
     user = models.ForeignKey(
         AnonUser,
         related_name='vote',

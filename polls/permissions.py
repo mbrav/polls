@@ -1,6 +1,10 @@
 from rest_framework import permissions
 
 
+class IsAuthenticated(permissions.IsAuthenticated):
+    pass
+
+
 class IsAuthorOrReadOnlyPermission(permissions.BasePermission):
 
     SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
@@ -27,13 +31,9 @@ class IsAuthorOrReadOnlyPermission(permissions.BasePermission):
 
         is_owner = obj.owner == request.user
         if request.method == 'DELETE':
-            return is_owner or request.user.is_staff
+            return is_owner
 
         return bool(request.user.is_staff or is_owner)
-
-
-class IsAuthenticated(permissions.IsAuthenticated):
-    pass
 
 
 class ReadOnly(permissions.BasePermission):

@@ -1,4 +1,4 @@
-from rest_framework import mixins, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
@@ -42,10 +42,7 @@ class AnonUserGenToken(ObtainAuthToken):
         })
 
 
-class PollViewSet(mixins.CreateModelMixin,
-                  mixins.RetrieveModelMixin,
-                  mixins.ListModelMixin,
-                  viewsets.GenericViewSet):
+class PollViewSet(viewsets.ModelViewSet):
     """Poll View Class"""
 
     queryset = Poll.objects.all()
@@ -133,7 +130,6 @@ class PollViewSet(mixins.CreateModelMixin,
     def add_choice(self, request, pk=None):
         """Add choice to poll"""
 
-        user = _get_user(request)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -146,26 +142,20 @@ class PollViewSet(mixins.CreateModelMixin,
                         status=status.HTTP_201_CREATED)
 
 
-class VoteViewSet(mixins.CreateModelMixin,
-                  mixins.RetrieveModelMixin,
-                  mixins.UpdateModelMixin,
-                  mixins.ListModelMixin,
-                  viewsets.GenericViewSet):
+class VoteViewSet(viewsets.ModelViewSet):
     """Vote View Class"""
 
     serializer_class = VoteSerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        user = _get_user(self.request)
-        queryset = Vote.objects.filter(user=user)
-        return queryset
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnlyPermission)
+    # permission_classes = (IsAuthenticated, IsAuthorOrReadOnlyPermission,)
+    queryset = Vote.objects.all()
 
     def list(self, request, *args, **kwargs):
         """Get list of votes made by user"""
 
-        queryset = self.filter_queryset(self.get_queryset())
+        user = _get_user(self.request)
+        queryset = Vote.objects.filter(user=user)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

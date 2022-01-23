@@ -5,17 +5,27 @@
 
 Polls is an a REST Api application that allows users to anonymously create polls and votes. Authentication is implemented using Tokens that are generated for a custom _AnonUser_ model that uses users IPv4 addresses that are hashed on the server using SHA384 hashing algorithm. **Do not rely on this approach since it is not secure** and can take a hacker less than a minute to go through all 4'294'967'296 IPv4 address combinations. It is done purely for educational purposes.
 
+### Poll types
+
+The API supports three types of polls:
+
+1. Choice poll
+2. Multiple choice poll
+3. Answer cased poll
+
+The API enforces a rule so that answer based pools cannot accept poll votes, or vice versa. This rule however is not enforced at the database model level.
+
 ### To improve
 
 -   [ ] [#1](https://github.com/mbrav/polls/issues/1) Configure app for IPv6 address use only
 -   [ ] [#2](https://github.com/mbrav/polls/issues/2) Hash IP addresses on the backend side instead of storing addresses in clear text
--   [ ] [#3](https://github.com/mbrav/polls/issues/3) Pytest coverage
+-   [x] [#3](https://github.com/mbrav/polls/issues/3) Pytest coverage
 
 ## Instructions
 
 ```bash
 $ git clone https://github.com/mbrav/polls.git
-$ cd heifmgur
+$ cd polls
 ```
 
 Setup a local python environment:

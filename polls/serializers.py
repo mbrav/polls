@@ -133,6 +133,10 @@ class AnswerSerializer(serializers.ModelSerializer):
         if not text:
             text = self.instance.poll
 
+        if poll.type != '3':
+            msg = 'Poll is not an answer based poll'
+            raise serializers.ValidationError(msg)
+
         user = self.context['request'].user
 
         if poll.date_end < Util.time_now():

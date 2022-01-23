@@ -167,6 +167,15 @@ class TestPolls:
         assert text == response.data.get('choices')[0]['text']
 
     @pytest.mark.django_db
+    def test_poll_add_choice_wrong_poll_type(self, user_client, poll_4):
+
+        text = 'New choice'
+        url = reverse('polls-add-choice', kwargs={'pk': poll_4.pk})
+        response = user_client.post(url, {'choice': text})
+
+        assert response.status_code != 201
+
+    @pytest.mark.django_db
     def test_poll_add_choice_duplicate(
             self, user_client, poll_1, poll_1_choices):
 
@@ -375,6 +384,20 @@ class TestAnswers:
         url = reverse('answers-list')
         response = user_client.get(url)
         assert response.data[0].get('text') == new_answer
+
+    @pytest.mark.django_db
+    def test_answer_create_wrong_poll_type(self, user_client, poll_1, poll_3):
+
+        url = reverse('answers-list')
+
+        new_answer = 'Test answer'
+        response = user_client.post(
+            url, {'poll': poll_1.pk, 'text': new_answer})
+        assert response.status_code != 201
+
+        response = user_client.post(
+            url, {'poll': poll_3.pk, 'text': new_answer})
+        assert response.status_code != 201
 
     @pytest.mark.django_db
     def test_answer_create_closed(

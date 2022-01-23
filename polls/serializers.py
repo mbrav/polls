@@ -168,18 +168,33 @@ class PollSerializer(serializers.ModelSerializer):
         many=True
     )
 
+    answers = AnswerSerializer(
+        source='answer',
+        read_only=True,
+        many=True
+    )
+
     vote_count = serializers.SerializerMethodField(
         read_only=True,
         method_name='get_vote_count'
     )
 
+    answer_count = serializers.SerializerMethodField(
+        read_only=True,
+        method_name='get_answer_count'
+    )
+
     def get_vote_count(self, obj):
         return obj.vote.count()
 
+    def get_answer_count(self, obj):
+        return obj.answer.count()
+
     class Meta:
         model = Poll
-        fields = ('id', 'name', 'type', 'description', 'is_open',
-            'vote_count', 'choices', 'date_created', 'date_end')
+        fields = (
+            'id', 'name', 'type', 'description', 'is_open', 'vote_count',
+            'answer_count', 'choices', 'answers', 'date_created', 'date_end')
 
 
 class PollCloseSerializer(serializers.ModelSerializer):

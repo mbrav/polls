@@ -38,10 +38,10 @@ $ python manage.py makemigrations
 $ python manage.py migrate
 ```
 
-Setup an admin user (not required):
+Load fixture data
 
 ```bash
-$ python manage.py createsuperuser
+$ python manage.py loaddata base/fixtures/dump.json
 ```
 
 Run server
@@ -51,3 +51,16 @@ $ python manage.py runserver
 ```
 
 Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) for a detailed ReDoc API schema description
+
+### Default user data from fixture `dump.json`:
+
+Usernames are set based on the first 30 symbols of their IP address SHA384 hash:
+
+-   Admin User
+    -   username: `54580887f3f91d797f39d14c9d7a16`
+    -   Token `4e11f089cb23d74115fec917e9f7236b11b22926`
+    -   Ip address: `0.0.0.0`
+-   Regulat User
+    -   username: `e9568e3cf2427b7fa3cb353d86ca94`
+    -   Token `7d82a5129acb41617389ebd7ae1d8abd1fcd588f`
+    -   Ip address: `127.0.0.1`

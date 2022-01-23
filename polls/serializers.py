@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import AnonUser, Choice, Poll, Vote
+from .models import AnonUser, Answer, Choice, Poll, Vote
 from .utils import Util
 
 
@@ -81,7 +81,6 @@ class VoteSerializer(serializers.ModelSerializer):
 
         if not poll:
             poll = self.instance.poll
-
         if not choice:
             choice = self.instance.choice
 
@@ -113,6 +112,45 @@ class VoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vote
         fields = ('id', 'poll', 'choice', 'user')
+
+
+class AnswerSerializer(serializers.ModelSerializer):
+    """
+    Base Answer serializer
+    """
+
+    user = serializers.CharField(
+        source='user.username',
+        read_only=True,
+    )
+
+    def validate(self, attrs):
+        poll = attrs.get('poll', None)
+        text = attrs.get('text', None)
+
+        if not poll:
+            poll = self.instance.poll
+        if not text:
+            text = self.instance.poll
+
+        user = self.context['request'].user
+
+        if poll.date_end < Util.time_now():
+            msg = 'Sorry, Poll\'s voting period has expired'
+            raise serializers.ValidationError(msg)
+
+        user_has_answered = Answer.objects.filter(
+            poll=poll, user=user, text=text).exists()
+
+        if user_has_answered:
+            msg = f'Sorry, you already left an answer for \'{poll.name}\''
+            raise serializers.ValidationError(msg)
+
+        return attrs
+
+    class Meta:
+        model = Answer
+        fields = ('id', 'poll', 'text', 'user')
 
 
 class PollSerializer(serializers.ModelSerializer):

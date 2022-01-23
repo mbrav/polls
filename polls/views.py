@@ -5,11 +5,11 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
-from .models import AnonUser, Choice, Poll, Vote
+from .models import AnonUser, Answer, Choice, Poll, Vote
 from .permissions import IsAuthenticated, IsAuthorOrReadOnlyPermission
-from .serializers import (AnonTokenSerializer, PollAddChoiceSerializer,
-                          PollCloseSerializer, PollExtendSerializer,
-                          PollSerializer, VoteSerializer)
+from .serializers import (AnonTokenSerializer, AnswerSerializer,
+                          PollAddChoiceSerializer, PollCloseSerializer,
+                          PollExtendSerializer, PollSerializer, VoteSerializer)
 from .utils import Util
 
 
@@ -148,7 +148,6 @@ class VoteViewSet(viewsets.ModelViewSet):
     serializer_class = VoteSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (IsAuthenticated, IsAuthorOrReadOnlyPermission)
-    # permission_classes = (IsAuthenticated, IsAuthorOrReadOnlyPermission,)
     queryset = Vote.objects.all()
 
     def list(self, request, *args, **kwargs):
@@ -161,5 +160,27 @@ class VoteViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Make a vote"""
+        user = _get_user(self.request)
+        serializer.save(user=user)
+
+
+class AnswerViewSet(viewsets.ModelViewSet):
+    """Answer View Class"""
+
+    serializer_class = AnswerSerializer
+    pagination_class = LimitOffsetPagination
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnlyPermission)
+    queryset = Answer.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        """Get list of answers made by user"""
+
+        user = _get_user(self.request)
+        queryset = Answer.objects.filter(user=user)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def perform_create(self, serializer):
+        """Make an answer"""
         user = _get_user(self.request)
         serializer.save(user=user)

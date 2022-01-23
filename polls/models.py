@@ -135,3 +135,35 @@ class Vote(models.Model):
 
     def __str__(self):
         return f'{self.poll.name[:15]} - {self.choice.text[:15]}'
+
+
+class Answer(models.Model):
+
+    @property
+    def owner(self):
+        return self.user
+
+    user = models.ForeignKey(
+        AnonUser,
+        related_name='answer',
+        on_delete=models.CASCADE
+    )
+
+    poll = models.ForeignKey(
+        Poll,
+        related_name='answer',
+        on_delete=models.CASCADE
+    )
+
+    text = models.CharField(
+        'Answer Text',
+        max_length=255
+    )
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Answer'
+        verbose_name_plural = 'Answers'
+
+    def __str__(self):
+        return f'{self.poll.name[:15]} - {self.text[:15]}'

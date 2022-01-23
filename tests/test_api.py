@@ -235,7 +235,7 @@ class TestVotes:
         assert response.status_code == 403
 
     @pytest.mark.django_db
-    def test_make_vote(self, user_client, poll_1, poll_1_choices):
+    def test_vote_create(self, user_client, poll_1, poll_1_choices):
 
         url = reverse('votes-list')
 
@@ -254,7 +254,7 @@ class TestVotes:
         assert response.data[0].get('choice') == choice
 
     @pytest.mark.django_db
-    def test_make_vote_closed(
+    def test_vote_create_closed(
             self, user_client, poll_1, poll_1_choices):
 
         url = reverse('polls-close', kwargs={'pk': poll_1.pk})
@@ -270,7 +270,7 @@ class TestVotes:
         assert response.status_code == 400
 
     @pytest.mark.django_db
-    def test_make_multivote(self, user_client, poll_3, poll_3_choices):
+    def test_vote_multiple_create(self, user_client, poll_3, poll_3_choices):
 
         url = reverse('votes-list')
 
@@ -327,5 +327,103 @@ class TestVotes:
         url = reverse('polls-detail', kwargs={'pk': poll_3_votes[0].id})
 
         response = user_client2.delete(url)
+        assert response.status_code != 204
+        assert response.status_code == 403
+
+
+class TestAnswers:
+
+    @pytest.mark.django_db
+    def test_answers_unauthenticated(self, user_unauth):
+        url = reverse('answers-list')
+        response = user_unauth.get(url)
+        assert response.status_code == 401
+
+    @pytest.mark.django_db
+    def test_answers_authenticated(self, user_client):
+        url = reverse('answers-list')
+        response = user_client.get(url)
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_answer_detail(self, user_client2, poll_4_answers):
+        url = reverse('answers-detail', kwargs={'pk': poll_4_answers[0].id})
+        response = user_client2.get(url)
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_answer_detail_permission(self, user_client, poll_4_answers):
+        url = reverse('answers-detail', kwargs={'pk': poll_4_answers[0].id})
+        response = user_client.get(url)
+        assert response.status_code != 200
+        assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_answer_create(self, user_client, poll_4):
+
+        url = reverse('answers-list')
+
+        new_answer = 'Test answer'
+        response = user_client.post(
+            url, {'poll': poll_4.pk, 'text': new_answer})
+        assert response.status_code == 201
+
+        response = user_client.post(
+            url, {'poll': poll_4.pk, 'text': new_answer})
+        assert response.status_code != 201
+
+        url = reverse('answers-list')
+        response = user_client.get(url)
+        assert response.data[0].get('text') == new_answer
+
+    @pytest.mark.django_db
+    def test_answer_create_closed(
+            self, user_client, poll_4):
+
+        url = reverse('polls-close', kwargs={'pk': poll_4.pk})
+
+        assert poll_4.is_open
+        response = user_client.post(url)
+
+        url = reverse('votes-list')
+        new_answer = 'Test answer'
+        response = user_client.post(
+            url, {'poll': poll_4.pk, 'text': new_answer})
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_answer_patch(self, user_client, poll_4):
+
+        url = reverse('answers-list')
+        new_answer = 'Test answer'
+
+        response = user_client.post(
+            url, {'poll': poll_4.pk, 'text': new_answer})
+
+        created_answer = response.data
+        edit_answer = 'Test answer edited'
+
+        url = reverse('answers-detail', kwargs={'pk': created_answer['id']})
+        response = user_client.patch(
+            url, {'text': edit_answer})
+
+        assert response.data.get('text') != created_answer
+        assert response.data.get('text') == edit_answer
+
+    @pytest.mark.django_db
+    def test_answer_delete(self, user_client2, poll_4, poll_4_answers):
+        url = reverse('answers-detail', kwargs={'pk': poll_4_answers[0].id})
+
+        response = user_client2.delete(url)
+        assert response.status_code == 204
+
+        response = user_client2.get(url)
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_answer_delete_permission(self, user_client, poll_4_answers):
+        url = reverse('answers-detail', kwargs={'pk': poll_4_answers[0].id})
+
+        response = user_client.delete(url)
         assert response.status_code != 204
         assert response.status_code == 403

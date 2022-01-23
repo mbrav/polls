@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import AnonUser, Choice, Poll, Vote
+from .models import AnonUser, Answer, Choice, Poll, Vote
 
 
 @admin.register(AnonUser)
@@ -54,5 +54,16 @@ class Vote(admin.ModelAdmin):
         'user',
         'poll',
         'choice',
+    )
+    empty_value_display = '-empty-'
+
+
+@admin.register(Answer)
+class Answer(admin.ModelAdmin):
+    list_per_page = 50
+    list_display = (
+        'user',
+        'poll',
+        'text',
     )
     empty_value_display = '-empty-'

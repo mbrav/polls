@@ -81,6 +81,13 @@ def poll_3(user):
 
 
 @pytest.fixture
+def poll_4(user):
+    from polls.models import Poll
+    return Poll.objects.create(
+        owner=user, type='3', name='poll_4', description='Psychiatrist Visit')
+
+
+@pytest.fixture
 def poll_1_choices(poll_1):
     from polls.models import Choice
     c1 = Choice.objects.create(poll=poll_1, text='George Bush')
@@ -115,3 +122,11 @@ def poll_3_votes(user, user2, poll_3, poll_3_choices):
     v3 = Vote.objects.create(user=user2, poll=poll_3,
                              choice=poll_3_choices[1])
     return (v1, v2, v3)
+
+
+@pytest.fixture
+def poll_4_answers(user, user2, poll_4):
+    from polls.models import Answer
+    a1 = Answer.objects.create(user=user2, poll=poll_4,
+                             text='Call suicide prevention hotline')
+    return (a1,)

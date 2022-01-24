@@ -1,7 +1,7 @@
 [![Django and Pytest CI](https://github.com/mbrav/polls/actions/workflows/django.yml/badge.svg)](https://github.com/mbrav/polls/actions/workflows/django.yml)
 [![wakatime](https://wakatime.com/badge/user/54ad05ce-f39b-4fa3-9f2a-6fe4b1c53ba4/project/6f9b9719-dd0c-4d89-a5fa-709edfe36471.svg)](https://wakatime.com/badge/user/54ad05ce-f39b-4fa3-9f2a-6fe4b1c53ba4/project/6f9b9719-dd0c-4d89-a5fa-709edfe36471)
 
-# polls
+# polls (Django 2.2.10 version)
 
 Polls is an a REST Api application that allows users to anonymously create polls and votes. Authentication is implemented using Tokens that are generated for a custom _AnonUser_ model that uses users IPv4 addresses that are hashed on the server using SHA384 hashing algorithm. **Do not rely on this approach since it is not secure** and can take a hacker less than a minute to go through all 4'294'967'296 IPv4 address combinations. It is done purely for educational purposes.
 
@@ -14,12 +14,6 @@ The API supports three types of polls:
 3. Answer cased poll
 
 The API enforces a rule so that answer based pools cannot accept poll votes, or vice versa. This rule however is not enforced at the database model level.
-
-### To improve
-
--   [ ] [#1](https://github.com/mbrav/polls/issues/1) Configure app for IPv6 address use only
--   [ ] [#2](https://github.com/mbrav/polls/issues/2) Hash IP addresses on the backend side instead of storing addresses in clear text
--   [x] [#3](https://github.com/mbrav/polls/issues/3) Pytest coverage
 
 ## Instructions
 
@@ -60,7 +54,7 @@ Run server
 $ python manage.py runserver
 ```
 
-Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) for a detailed ReDoc API schema description
+Go to [http://127.0.0.1:8000/api/v1/](http://127.0.0.1:8000/api/v1/)
 
 ### Default user data from fixture `dump.json`:
 

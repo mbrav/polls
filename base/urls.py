@@ -2,8 +2,9 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-from polls.views import AnonUserGenToken
 from rest_framework import permissions
+
+from polls.views import AnonUserGenToken
 
 from .routers import router
 
